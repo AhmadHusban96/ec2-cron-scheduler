@@ -15,7 +15,7 @@ This repository contains a solution for automating the scheduling of EC2 instanc
 You have multiple choices for deploying this solution:
 
 1. **Manual Creation**: Follow the detailed step-by-step guide to manually create and configure the Lambda function, IAM roles, and CloudWatch Events.
-2. **CloudFormation Template**: Deploy using the provided CloudFormation template. [CloudFormation Template Link](https://github.com/AhmadHusban96/ec2-cron-scheduler/blob/main/CloudFormation/ec2-cron-scheduler.yaml)
+2. **CloudFormation Template**: Deploy using the provided CloudFormation template. [CloudFormation Template Link](https://github.com/AhmadHusban96/ec2-cron-scheduler/blob/master/CloudFormation/ec2-cron-scheduler.yaml)
 3. **Quick Launch Link**: Use this quick launch link to deploy the CloudFormation stack with default parameters: [Quick Launch CloudFormation](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https://ec2-cron-scheduler.s3.amazonaws.com/ec2-cron-scheduler.yaml&stackName=EC2CronScheduler&param_LambdaMemorySize=256&param_LambdaTimeout=300&param_LambdaInvokeRate=rate(1%20minute)&param_S3BucketName=ec2-cron-scheduler&param_S3ObjectKey=EC2CronScheduler.zip)
 
 ## Setup Instructions
