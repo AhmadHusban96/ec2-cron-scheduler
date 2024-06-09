@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CloudFormation template to deploy the EC2CronScheduler Lambda function, 
+  IAM role and policies, and CloudWatch Events rule.
+  Created by Ahmad Husban
+  GitHub: https://github.com/AhmadHusban96/ec2-cron-scheduler
+  LinkedIn: https://www.linkedin.com/in/ahmad-husban/
+
+Parameters:
+  LambdaInvokeRate:
+    Type: String
+    Default: "rate(1 minute)"
+    Description: "The rate at which the CloudWatch Events rule will trigger the Lambda function. Example values: rate(1 minute), rate(5 minutes), rate(1 hour)."
+  
+  S3BucketName:
+    Type: String
+    Default: "ec2-cron-scheduler"
+    Description: "The name of the S3 bucket where the Lambda function code is stored. Change this only if you have your own customized script in an S3 bucket you own."
+  
+  S3ObjectKey:
+    Type: String
+    Default: "EC2CronScheduler.zip"
+    Description: "The key (file name) of the Lambda function code in the S3 bucket. Change this only if you have your own customized script in an S3 bucket you own."
+  
+  LambdaTimeout:
+    Type: Number
+    Default: 300
+    Description: "The timeout in seconds for the Lambda function."
+
+  LambdaMemorySize:
+    Type: Number
+    Default: 256
+    MinValue: 128
+    MaxValue: 10240
+    Description: "The amount of memory allocated to the Lambda function in MB. Must be between 128 and 10240 MB."
+
+Resources:
+  EC2CronSchedulerLambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Principal: 
+              Service: "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies: 
+        - PolicyName: "EC2CronSchedulerLambdaPolicy"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: "Allow"
+                Action: 
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+              - Effect: "Allow"
+                Action: 
+                  - "ec2:DescribeInstances"
+                  - "ec2:StartInstances"
+                  - "ec2:StopInstances"
+                  - "ec2:DescribeRegions"
+                Resource: "*"
+      Tags:
+        - Key: "Name"
+          Value: "EC2CronScheduler"
+
+  EC2CronSchedulerLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: "lambda_function.lambda_handler"
+      Role: 
+        Fn::GetAtt:
+          - "EC2CronSchedulerLambdaRole"
+          - "Arn"
+      Code:
+        S3Bucket: 
+          Ref: "S3BucketName"
+        S3Key: 
+          Ref: "S3ObjectKey"
+      Runtime: "python3.12"
+      Timeout: 
+        Ref: "LambdaTimeout"
+      MemorySize: 
+        Ref: "LambdaMemorySize"
+      Tags:
+        - Key: "Name"
+          Value: "EC2CronScheduler"
+
+  EC2CronSchedulerLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: 
+        Ref: "EC2CronSchedulerLambdaFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "EC2CronSchedulerEventRule"
+          - "Arn"
+
+  EC2CronSchedulerEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      ScheduleExpression: 
+        Ref: "LambdaInvokeRate"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - "EC2CronSchedulerLambdaFunction"
+              - "Arn"
+          Id: "EC2CronSchedulerLambdaFunction"
+
+Outputs:
+  LambdaFunctionName:
+    Description: "Name of the Lambda function"
+    Value: 
+      Ref: "EC2CronSchedulerLambdaFunction"
+  LambdaFunctionArn:
+    Description: "ARN of the Lambda function"
+    Value: 
+      Fn::GetAtt:
+        - "EC2CronSchedulerLambdaFunction"
+        - "Arn"
+  EventRuleName:
+    Description: "Name of the CloudWatch Events rule"
+    Value: 
+      Ref: "EC2CronSchedulerEventRule"
+  EventRuleArn:
+    Description: "ARN of the CloudWatch Events rule"
+    Value: 
+      Fn::GetAtt:
+        - "EC2CronSchedulerEventRule"
+        - "Arn"
